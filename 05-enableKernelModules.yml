@@ -1,0 +1,65 @@
+---
+- name: 05-enableKernelModules
+  hosts: localhost
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    become: yes
+    become_method: sudo 
+
+  tasks:
+
+  - name: Add the overlay module
+    modprobe:
+      name: overlay
+      state: present
+    become: true
+
+  - name: Add the br_netfilter module
+    modprobe:
+      name: br_netfilter
+      state: present
+    become: true
+
+  - name: add net.bridge.bridge-nf-call-ip6tables to /etc/sysctl.d/kubernetes.conf"
+    sysctl:
+      name: net.bridge.bridge-nf-call-ip6tables
+      value: '1'
+      sysctl_set: yes
+      sysctl_file: /etc/sysctl.d/kubernetes.conf
+      reload: yes
+    become: true
+
+  - name: add net.bridge.bridge-nf-call-iptables to /etc/sysctl.d/kubernetes.conf"
+    sysctl:
+      name: net.bridge.bridge-nf-call-iptables
+      value: '1'
+      sysctl_set: yes
+      sysctl_file: /etc/sysctl.d/kubernetes.conf
+      reload: yes
+    become: true
+
+  - name: add net.ipv4.ip_forward to /etc/sysctl.d/kubernetes.conf"
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: '1'
+      sysctl_set: yes
+      sysctl_file: /etc/sysctl.d/kubernetes.conf
+      reload: yes
+    become: true
+
+  - name: Reload sysctl 
+    shell: sudo sysctl -p --system
+    become: yes
+
+  - name: Add Cri-o repo
+    shell: | 
+      sudo su -
+      OS="xUbuntu_20.04"
+      VERSION=1.23
+      echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+      echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list
+      curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
+      curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -

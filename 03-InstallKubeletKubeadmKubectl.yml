@@ -1,0 +1,70 @@
+---
+- name: 03-InstallKubeletKubeadmKubectl
+  hosts: localhost
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    become: yes
+    become_method: sudo 
+
+  tasks:
+  
+  - name: Install a list of packages
+    ansible.builtin.apt:
+      pkg:
+      - curl 
+      - apt-transport-https
+    become: true
+
+  - name: Add an Apt signing key, uses whichever key is at the URL
+    ansible.builtin.apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
+
+  - name: Update sources list
+    shell: "echo \"deb https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list"
+    become: true
+
+  - name: Update apt repo and cache on all Debian/Ubuntu boxes
+    ansible.builtin.apt:
+      update_cache: yes
+      force_apt_get: yes
+      cache_valid_time: 3600
+    become: true
+
+  - name: Install a list of packages
+    ansible.builtin.apt:
+      pkg:
+      - vim
+      - git
+      - curl
+      - wget
+      - kubelet
+      - kubeadm
+      - kubectl
+    become: true
+
+  - name: Hold kubelet
+    dpkg_selections:
+      name: kubelet
+      selection: hold
+  
+  - name: Hold kubeadm
+    dpkg_selections:
+      name: kubeadm
+      selection: hold
+
+  - name: Hold kubectl
+    dpkg_selections:
+      name: kubectl
+      selection: hold
+
+  - name: Check kubectl version --client && kubeadm version
+    command: kubectl version --client && kubeadm version
+    register: kubeStatus
+
+  - debug:
+      msg: "{{ item }}"
+    with_items: "{{ kubeStatus.stdout_lines }}"

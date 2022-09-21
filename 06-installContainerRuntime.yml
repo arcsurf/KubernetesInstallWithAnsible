@@ -1,0 +1,80 @@
+---
+- name: 06-installContainerRuntime
+  hosts: localhost
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    become: yes
+    become_method: sudo 
+
+  tasks:
+
+  #Pre check modules:
+  - name: Add the overlay module
+    modprobe:
+      name: overlay
+      state: present
+    become: true
+
+  - name: Add the br_netfilter module
+    modprobe:
+      name: br_netfilter
+      state: present
+    become: true
+
+  # Add Cri-o repo
+  - name: Add Crii-o repo
+    shell: |
+      sudo su -
+      OS="xUbuntu_20.04"
+      VERSION=1.23
+      echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+      echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list
+      curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
+      curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
+
+
+  # Install CRI-O
+  - name: Update apt repo and cache on all Debian/Ubuntu boxes
+    ansible.builtin.apt:
+      update_cache: yes
+      force_apt_get: yes
+      cache_valid_time: 3600
+    become: true
+
+  - name: Install a list of packages
+    ansible.builtin.apt:
+      pkg:
+      - cri-o
+      - cri-o-runc
+    become: true
+
+  # Update CRI-O CIDR subnet
+  - name: Add Crii-o repo
+    shell: sudo sed -i 's/10.85.0.0/192.168.0.0/g' /etc/cni/net.d/100-crio-bridge.conf
+
+  #Reload services
+  - name: Just force systemd to reread configs
+    ansible.builtin.systemd:
+      daemon_reload: yes
+
+  - name: Restart service crio
+    ansible.builtin.systemd:
+      state: restarted
+      daemon_reload: yes
+      name: crio
+
+  #Enable kubelet service.
+  - name: Enable service crio
+    ansible.builtin.systemd:
+      name: crio
+      enabled: yes
+    become: true
+
+  - name: Make sure a service crio is running
+    ansible.builtin.systemd:
+      state: started
+      name: crio
+    register: crioStatus

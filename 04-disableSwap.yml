@@ -1,0 +1,32 @@
+---
+- name: 04-disableSwap
+  hosts: localhost
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    become: yes
+    become_method: sudo 
+
+  tasks:
+  
+  - name: Disable SWAP since kubernetes can't work with swap enabled (1/2)
+    shell: |
+      swapoff -a
+    become: true
+
+  - name: Disable SWAP in fstab since kubernetes can't work with swap enabled (2/2)
+    replace:
+      path: /etc/fstab
+      regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+      replace: '# \1'
+    become: true
+
+  - name: Check SWAP DISABLE = 0B OK
+    command: free -h
+    register: swapStatus
+
+  - debug:
+      msg: "{{ item }}"
+    with_items: "{{ swapStatus.stdout_lines }}"

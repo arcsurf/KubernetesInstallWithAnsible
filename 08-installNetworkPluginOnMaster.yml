@@ -1,0 +1,25 @@
+---
+- name: 08-installNetworkPluginOnMaster
+  hosts: localhost
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    become: yes
+    become_method: sudo 
+
+  tasks:
+
+  - name: tigera operator - projectcalico
+    shell: kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+    register: tigeraOperator
+  
+  - debug:
+      msg: "{{ tigeraOperator.stdout_lines }}"
+
+  - name: Custom resources - projectcalico
+    shell: kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+    register: customResources
+
+  - debug:
+      msg: "{{ customResources.stdout_lines }}"
