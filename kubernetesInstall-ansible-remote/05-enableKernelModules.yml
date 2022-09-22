@@ -1,0 +1,59 @@
+---
+- name: 05-enableKernelModules
+  hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    #become: yes
+    #become_method: sudo 
+
+  tasks:
+
+  - name: Add the overlay module
+    modprobe:
+      name: overlay
+      state: present
+    become: yes
+
+  - name: Add the br_netfilter module
+    modprobe:
+      name: br_netfilter
+      state: present
+    become: yes
+
+  - name: add net.bridge.bridge-nf-call-ip6tables to /etc/sysctl.d/kubernetes.conf"
+    sysctl:
+      name: net.bridge.bridge-nf-call-ip6tables
+      value: '1'
+      sysctl_set: yes
+      sysctl_file: /etc/sysctl.d/kubernetes.conf
+      reload: yes
+    become: yes
+
+  - name: add net.bridge.bridge-nf-call-iptables to /etc/sysctl.d/kubernetes.conf"
+    sysctl:
+      name: net.bridge.bridge-nf-call-iptables
+      value: '1'
+      sysctl_set: yes
+      sysctl_file: /etc/sysctl.d/kubernetes.conf
+      reload: yes
+    become: yes
+
+  - name: add net.ipv4.ip_forward to /etc/sysctl.d/kubernetes.conf"
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: '1'
+      sysctl_set: yes
+      sysctl_file: /etc/sysctl.d/kubernetes.conf
+      reload: yes
+    become: yes
+
+  # - name: Reload sysctl 
+  #   shell: sudo sysctl -p --system
+  #   become: yes
+
+  - name: Just force systemd to reread configs
+    ansible.builtin.systemd:
+      daemon_reload: yes

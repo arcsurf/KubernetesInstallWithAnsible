@@ -1,0 +1,120 @@
+---
+- name: 07-initializeMasterNode
+  hosts: all
+  become_method: sudo
+  gather_facts: yes
+
+  vars:
+    #become: yes
+    #become_method: sudo 
+
+  tasks:
+
+  - debug:
+      msg: 
+        - "ansible_host: {{ansible_host}}"
+        - "ansible_fqdn: {{ansible_fqdn}}"
+
+
+  #Check br_netfilter status
+  - name: make sure that the br_netfilter module is loaded
+    shell: lsmod | grep br_netfilter
+    register: netfilterOutput
+    become: yes
+
+  - debug:
+      msg: "{{ item }}"
+    with_items: "{{ netfilterOutput.stdout_lines }}"
+
+  #Enable kubelet service.
+  - name: Enable service kubelet
+    ansible.builtin.systemd:
+      name: kubelet
+      enabled: yes
+    become: yes
+
+  #Pull container images:
+  - name: Pull container images
+    command: sudo kubeadm config images pull
+    become: yes
+
+  #Add hostname&ip address for DNS resolver in Master node I.E: ansible-playbook -e "serverIp=192.168.1.101 serverFqdn=sgre-k8s-master"
+  - name: Add hostname & ip address for DNS resolver in Master node (present in /etc/hosts)
+    #shell: sudo echo "{{ansible_host}} {{ansible_fqdn}}" >> /etc/hosts
+    lineinfile:
+      path: "/etc/hosts"
+      line: "{{ansible_host}} {{ansible_fqdn}}"
+      state: present
+      backup: yes      
+    become: yes
+
+
+  - name: kubeadm Init
+    shell: sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --upload-certs --control-plane-endpoint={{ansible_fqdn}}
+    register: kubeadmInit
+    become: yes
+
+  - debug:
+      msg: "{{ kubeadmInit.stdout_lines }}"
+    # with_items: "{{ kubeadmInit.stdout_lines }}"
+
+  - name: "check if folder $HOME/.kube exists"
+    file:
+      path: $HOME/.kube/
+      state: directory
+      mode: '0755'
+    become: yes
+
+  - name: create kub-config def file
+    copy:
+      src: /etc/kubernetes/admin.conf 
+      dest: $HOME/.kube/config
+      remote_src: yes
+    become: yes
+
+  - name: Give 755 to sh files
+    file:
+      path: $HOME/.kube/config
+      owner: root
+      group: root
+      mode: 0775
+    become: yes
+
+
+
+  # - name: "check if folder $HOME/.kube exists"
+  #   file:
+  #     path: $HOME/.kube/
+  #     state: directory
+  #     mode: '0755'
+  #   become: no
+
+  # - name: create kub-config def file
+  #   copy:
+  #     src: /etc/kubernetes/admin.conf 
+  #     dest: $HOME/.kube/config
+  #     remote_src: yes
+  #   become: no
+
+
+  # - name: Give 755 to sh files
+  #   file:
+  #     path: $HOME/.kube/config
+  #     owner: $USER
+  #     group: $USER
+  #     mode: 0775
+  #   become: no
+
+
+
+  # - name: configure kube
+  #   shell: sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+  - name: Check "kubectl cluster-info"
+    shell: kubectl cluster-info
+    register: clusterInfo
+    become: yes
+
+
+  - debug:
+      msg: "{{ clusterInfo.stdout_lines }}"

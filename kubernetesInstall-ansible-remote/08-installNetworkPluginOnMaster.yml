@@ -1,0 +1,95 @@
+---
+- name: 08-installNetworkPluginOnMaster
+  hosts: all
+  become_method: sudo
+  gather_facts: no
+
+
+  tasks:
+
+  # - name: tigera operator - projectcalico
+  #   shell: kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+  #   register: tigeraOperator
+  
+  # - debug:
+  #     msg: "{{ tigeraOperator.stdout_lines }}"
+
+  # - name: Custom resources - projectcalico
+  #   shell: kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+  #   register: customResources
+
+  # - debug:
+  #     msg: "{{ customResources.stdout_lines }}"
+
+
+    - name: Install Python pip
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        update_cache: true
+        state: present
+        force_apt_get: yes
+      loop:
+        - python3-pip
+      become: true
+
+
+    - name: Install pip packages
+      ansible.builtin.pip:
+        name: 
+          - pyyaml
+          - kubernetes
+      become: true
+
+
+
+    - name: Fetching kube_config-file from remote k8s-server
+      fetch:
+        src: $HOME/.kube/config
+        dest: /tmp/kube_config_{{inventory_hostname}}
+        flat: yes
+      become: true
+
+
+
+    # - name: Deploy/install Custom resources - projectcalico
+    #   kubernetes.core.k8s:
+    #     kubeconfig: /tmp/kube_config_{{inventory_hostname}}
+    #     state: present
+    #     validate_certs: no
+    #     definition: "{{ lookup('file', './files/custom-resources.yaml') | from_yaml }}"
+    #   ignore_errors: yes
+      
+    # - name: Deploy/install  tigera operator - projectcalico
+    #   kubernetes.core.k8s:
+    #     kubeconfig: /tmp/kube_config_{{inventory_hostname}}
+    #     state: present
+    #     validate_certs: no
+    #     definition: "{{ lookup('file', './files/tigera-operator.yaml') | from_yaml }}"
+    #   ignore_errors: yes
+    #   become: true      
+
+    - name: Copy temp files to remote server
+      vars:
+        tmp_files:
+          - files/tigera-operator.yaml
+          - files/custom-resources.yaml        
+      copy:
+        src: "{{item}}"
+        dest: /tmp/
+      loop: "{{ tmp_files }}"
+      become: yes
+
+
+    - name: apply manifest tigera-operator manifest
+      kubernetes.core.k8s:
+        src: "/tmp/tigera-operator.yaml"
+        state: present
+        kubeconfig: /etc/kubernetes/admin.conf
+      become: yes
+   
+    - name: apply manifest tigera-operator manifest
+      kubernetes.core.k8s:
+        src: "/tmp/custom-resources.yaml"
+        state: present
+        kubeconfig: /etc/kubernetes/admin.conf
+      become: yes

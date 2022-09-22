@@ -1,0 +1,14 @@
+[AWX_Infra]
+AWX ansible_host=1.1.1.1
+
+[all:vars]
+host_key_checking = false
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+ansible_command_timeout=60
+
+
+[AWX_Infra:vars]
+ansible_shell_type=sh
+ansible_user=administrator
+ansible_password=YourPassword
+ansible_become_password=YourPassword

@@ -1,0 +1,112 @@
+---
+- name: 06-installContainerRuntime
+  hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+
+  vars:
+    #become: yes
+    #become_method: sudo 
+
+    OSName: "xUbuntu_20.04"
+    Version: "1.23"
+    aptkeys:
+      - https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:{{Version}}/{{OSName}}/Release.key
+      - https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{OSName}}/Release.key
+    aptrepos:
+      - repo: deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/{{OSName}}/ /
+        filename: /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+      - repo: deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{Version}}/{{OSName}}/ /
+        filename: /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:{{Version}}.list
+
+
+    # - name: Add Crii-o repo
+    #     OS="xUbuntu_20.04"
+    #     VERSION=1.23
+    #     echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+    #     echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list
+    #     curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
+    #     curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
+
+
+
+
+  tasks:
+
+  #Pre check modules:
+  - name: Add the overlay module
+    modprobe:
+      name: overlay
+      state: present
+    become: yes
+
+  - name: Add the br_netfilter module
+    modprobe:
+      name: br_netfilter
+      state: present
+    become: yes
+
+  # Add Cri-o repo
+
+
+
+  - name: Add an Apt signing key for Cri-o
+    ansible.builtin.apt_key:
+      url: "{{item}}"
+      state: present
+    loop: "{{aptkeys}}"
+    become: yes
+
+
+  - name: Add source repository into sources list to Cri-o
+    ansible.builtin.apt_repository:
+      repo: "{{item.repo}}"
+      filename: "{{item.filename}}"
+      state: present
+    loop: "{{aptrepos}}"
+    become: yes
+
+
+
+
+  # Install CRI-O
+  - name: Update apt
+    shell: sudo apt update -y
+    become: yes
+
+
+  - name: Install a list of packages
+    apt:
+      pkg:
+      - cri-o
+      - cri-o-runc
+    become: true
+
+  # Update CRI-O CIDR subnet
+  - name: Add Crii-o repo
+    shell: sudo sed -i 's/10.85.0.0/192.168.0.0/g' /etc/cni/net.d/100-crio-bridge.conf
+
+  #Reload services
+  - name: Just force systemd to reread configs
+    ansible.builtin.systemd:
+      daemon_reload: yes
+
+  - name: Restart service crio
+    ansible.builtin.systemd:
+      state: restarted
+      daemon_reload: yes
+      name: crio
+
+  #Enable kubelet service.
+  - name: Enable service crio
+    ansible.builtin.systemd:
+      name: crio
+      enabled: yes
+    become: true
+
+  - name: Make sure a service crio is running
+    ansible.builtin.systemd:
+      state: started
+      name: crio
+    register: crioStatus

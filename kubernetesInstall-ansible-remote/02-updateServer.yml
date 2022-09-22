@@ -1,0 +1,45 @@
+
+---
+- name: 02-updateServer
+  hosts: all
+  gather_facts: no
+
+  vars:
+    #become: yes
+    #become_method: sudo 
+
+  tasks:
+
+  - name: Update apt
+    shell: sudo apt update -y
+    become: yes
+    become_method: sudo
+
+  - name: Upgrade apt
+    shell: sudo apt upgrade -y
+    become: yes
+    become_method: sudo
+
+  # - name: Rebooting Server
+  #   shell: \[ -f /var/run/reboot-required \] && sudo reboot -f
+  #   become: yes
+  #   become_method: sudo
+  #   ignore_errors: yes
+  #   ignore_unreachable: yes
+
+
+  - name: Reboot a slow machine that might have lots of updates to apply
+    ansible.builtin.reboot:
+      reboot_timeout: 300
+    become: yes
+      
+
+  - name: Continue if Port TCP 22 is open in remote host 
+    vars:
+      ansible_shell_type: sh
+    local_action:
+      module: wait_for
+      host: "{{ ansible_host }}"
+      port: 22
+      state: started
+      timeout: 300 #seconds to wait to decide if port TCP 22 is open
