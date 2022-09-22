@@ -41,4 +41,4 @@
 **Install Calico Network Plugin**
 ======================================================
 
-- ansible-playbook -i inventory.txt --limit "AWX_" 08-installNetworkPluginOnMaster.yml
+- ansible-playbook -i inventory.txt --limit "HOSTNAME" 08-installNetworkPluginOnMaster.yml
