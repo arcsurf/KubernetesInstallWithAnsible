@@ -4,9 +4,6 @@
   become_method: sudo
   gather_facts: no
 
-  vars:
-    #become: yes
-    #become_method: sudo 
 
   tasks:
 
