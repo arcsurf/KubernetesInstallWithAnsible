@@ -5,8 +5,8 @@
   gather_facts: no
 
   vars:
-    become: yes
-    become_method: sudo 
+    #become: yes
+    #become_method: sudo 
 
   tasks:
 
@@ -14,7 +14,7 @@
   - name: make sure that the br_netfilter module is loaded
     shell: lsmod | grep br_netfilter
     register: netfilterOutput
-    become: true
+    become: yes
 
   - debug:
       msg: "{{ item }}"
@@ -25,17 +25,17 @@
     ansible.builtin.systemd:
       name: kubelet
       enabled: yes
-    become: true
+    become: yes
 
   #Pull container images:
   - name: make sure that the br_netfilter module is loaded
     command: sudo kubeadm config images pull
-    become: true
+    become: yes
 
   #Add hostname&ip address for DNS resolver in Master node I.E: ansible-playbook -e "serverIp=192.168.1.101 serverFqdn=sgre-k8s-master"
   - name: make sure that the br_netfilter module is loaded
     shell: sudo echo "{{serverIp}} {{serverFqdn}}" >> /etc/hosts
-    become: true
+    become: yes
 
   - name: Add Cri-o repo
     shell: | 
@@ -44,7 +44,7 @@
       --upload-certs \
       --control-plane-endpoint={{serverFqdn}}
     register: kubeadmInit
-    become: true
+    #become: yes
 
   - debug:
       msg: "{{ kubeadmInit.stdout_lines }}"

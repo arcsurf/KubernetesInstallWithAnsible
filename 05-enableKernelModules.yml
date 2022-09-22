@@ -6,8 +6,8 @@
   gather_facts: no
 
   vars:
-    become: yes
-    become_method: sudo 
+    #become: yes
+    #become_method: sudo 
 
   tasks:
 
@@ -15,13 +15,13 @@
     modprobe:
       name: overlay
       state: present
-    become: true
+    become: yes
 
   - name: Add the br_netfilter module
     modprobe:
       name: br_netfilter
       state: present
-    become: true
+    become: yes
 
   - name: add net.bridge.bridge-nf-call-ip6tables to /etc/sysctl.d/kubernetes.conf"
     sysctl:
@@ -30,7 +30,7 @@
       sysctl_set: yes
       sysctl_file: /etc/sysctl.d/kubernetes.conf
       reload: yes
-    become: true
+    become: yes
 
   - name: add net.bridge.bridge-nf-call-iptables to /etc/sysctl.d/kubernetes.conf"
     sysctl:
@@ -39,7 +39,7 @@
       sysctl_set: yes
       sysctl_file: /etc/sysctl.d/kubernetes.conf
       reload: yes
-    become: true
+    become: yes
 
   - name: add net.ipv4.ip_forward to /etc/sysctl.d/kubernetes.conf"
     sysctl:
@@ -48,7 +48,7 @@
       sysctl_set: yes
       sysctl_file: /etc/sysctl.d/kubernetes.conf
       reload: yes
-    become: true
+    become: yes
 
   - name: Reload sysctl 
     shell: sudo sysctl -p --system
@@ -63,3 +63,4 @@
       echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list
       curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
       curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
+    become: yes

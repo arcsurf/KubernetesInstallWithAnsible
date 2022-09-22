@@ -1,3 +1,4 @@
+
 ---
 - name: 03-InstallKubeletKubeadmKubectl
   hosts: localhost
@@ -6,8 +7,8 @@
   gather_facts: no
 
   vars:
-    become: yes
-    become_method: sudo 
+    #become: yes
+    #become_method: sudo 
 
   tasks:
   
@@ -16,7 +17,7 @@
       pkg:
       - curl 
       - apt-transport-https
-    become: true
+    become: yes
 
   - name: Add an Apt signing key, uses whichever key is at the URL
     ansible.builtin.apt_key:
@@ -25,14 +26,14 @@
 
   - name: Update sources list
     shell: "echo \"deb https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list"
-    become: true
+    become: yes
 
   - name: Update apt repo and cache on all Debian/Ubuntu boxes
     ansible.builtin.apt:
       update_cache: yes
       force_apt_get: yes
       cache_valid_time: 3600
-    become: true
+    become: yes
 
   - name: Install a list of packages
     ansible.builtin.apt:
@@ -44,7 +45,7 @@
       - kubelet
       - kubeadm
       - kubectl
-    become: true
+    become: yes
 
   - name: Hold kubelet
     dpkg_selections:

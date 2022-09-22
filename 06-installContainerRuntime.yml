@@ -6,8 +6,8 @@
   gather_facts: no
 
   vars:
-    become: yes
-    become_method: sudo 
+    #become: yes
+    #become_method: sudo 
 
   tasks:
 
@@ -16,13 +16,13 @@
     modprobe:
       name: overlay
       state: present
-    become: true
+    become: yes
 
   - name: Add the br_netfilter module
     modprobe:
       name: br_netfilter
       state: present
-    become: true
+    become: yes
 
   # Add Cri-o repo
   - name: Add Crii-o repo
@@ -34,18 +34,25 @@
       echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /" > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list
       curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | apt-key add -
       curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | apt-key add -
-
+    become: yes
 
   # Install CRI-O
   - name: Update apt repo and cache on all Debian/Ubuntu boxes
-    ansible.builtin.apt:
+    apt:
       update_cache: yes
       force_apt_get: yes
       cache_valid_time: 3600
-    become: true
+    become: yes
+
+  - name: Upgrade all apt packages
+    apt:
+      upgrade: yes
+      force_apt_get: yes
+    become: yes
+
 
   - name: Install a list of packages
-    ansible.builtin.apt:
+    apt:
       pkg:
       - cri-o
       - cri-o-runc
