@@ -28,11 +28,8 @@
     shell: "echo \"deb https://apt.kubernetes.io/ kubernetes-xenial main\" | sudo tee /etc/apt/sources.list.d/kubernetes.list"
     become: yes
 
-  - name: Update apt repo and cache on all Debian/Ubuntu boxes
-    ansible.builtin.apt:
-      update_cache: yes
-      force_apt_get: yes
-      cache_valid_time: 3600
+  - name: Update apt
+    shell: sudo apt update
     become: yes
 
   - name: Install a list of packages
